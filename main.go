@@ -76,25 +76,17 @@ func parseP3(reader *bufio.Reader) (w, h int64, pixel []color.RGBA) {
 	pixel = make([]color.RGBA, w*h)
 	idx := 0
 
+	input, err := io.ReadAll(reader)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+	}
+
+	colorScanner := NewScanner(input)
 	for idx < len(pixel) {
 		colors := make([]uint8, 0, 3)
 		for len(colors) < 3 {
-			num := make([]byte, 0, 3)
-			for {
-				b, err := reader.ReadByte()
-				if err != nil {
-					if errors.Is(err, io.EOF) {
-						break
-					}
-					fmt.Fprintf(os.Stderr, "error: %v\n", err)
-				}
-				if b <= '0' || b >= '9' {
-					break
-				}
-				num = append(num, b)
-			}
-			c, _ := strconv.ParseInt(s, 10, 32)
-			colors = append(colors, uint8(c))
+			c := colorScanner.NextNumber()
+			colors = append(colors, c)
 		}
 		if len(colors) < 3 {
 			break
