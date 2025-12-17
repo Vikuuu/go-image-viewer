@@ -1,4 +1,4 @@
 build:
-	go build -v *.go
+	go build -o ./bin/image_viewer -v *.go 
 run: build
-	./main p3image.ppm
+	./bin/image_viewer ./testdata/p3image.ppm

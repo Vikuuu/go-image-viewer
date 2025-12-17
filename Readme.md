@@ -6,4 +6,4 @@ This is the basic implementation of image-viewer in GO. Supporting on PPM P6 fil
 
 ## Screenshot
 
-![Screenshot](./screenshot.png)
+![Screenshot](./doc/screenshot.png)
