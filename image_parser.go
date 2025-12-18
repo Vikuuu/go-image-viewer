@@ -25,23 +25,11 @@ func parseImage(f *os.File, win *fyne.Window) {
 	imgCanvas := &canvas.Image{}
 	switch line {
 	case "P3":
-		w, h, pixel := parseP3(reader)
-		img := image.NewRGBA(image.Rect(0, 0, w, h))
-		for y := range h {
-			for x := range w {
-				img.SetRGBA(x, y, pixel[y][x])
-			}
-		}
+		w, h, img := parseP3(reader)
 		imgCanvas = canvas.NewImageFromImage(img)
 		winW, winH = w, h
 	case "P6":
-		w, h, pixel := parseP6(reader)
-		img := image.NewRGBA(image.Rect(0, 0, w, h))
-		for y := range h {
-			for x := range w {
-				img.SetRGBA(x, y, pixel[y][x])
-			}
-		}
+		w, h, img := parseP6(reader)
 		imgCanvas = canvas.NewImageFromImage(img)
 		winW, winH = w, h
 	}
@@ -50,7 +38,7 @@ func parseImage(f *os.File, win *fyne.Window) {
 	(*win).Resize(fyne.NewSize(float32(winW), float32(winH)))
 }
 
-func parseP3(reader *bufio.Reader) (w, h int, pixels [][]color.RGBA) {
+func parseP3(reader *bufio.Reader) (w, h int, img *image.RGBA) {
 	// read second line
 	line, _ := reader.ReadString('\n')
 	dimensions := strings.Split(line, " ")
@@ -61,7 +49,7 @@ func parseP3(reader *bufio.Reader) (w, h int, pixels [][]color.RGBA) {
 
 	w = int(tempW)
 	h = int(tempH)
-	pixels = make([][]color.RGBA, h)
+	img = image.NewRGBA(image.Rect(0, 0, w, h))
 
 	input, err := io.ReadAll(reader)
 	if err != nil {
@@ -69,30 +57,26 @@ func parseP3(reader *bufio.Reader) (w, h int, pixels [][]color.RGBA) {
 	}
 
 	colorScanner := NewScanner(input)
-	for i := range len(pixels) {
-		pixels[i] = make([]color.RGBA, w)
-		for j := range len(pixels[i]) {
+	for i := range h {
+		for j := range w {
 			colors := make([]uint8, 0, 3)
 			for len(colors) < 3 {
 				c := colorScanner.NextNumber()
 				colors = append(colors, c)
 			}
-			if len(colors) < 3 {
-				break
-			}
-			pixels[i][j] = color.RGBA{
+			img.SetRGBA(j, i, color.RGBA{
 				R: colors[0],
 				G: colors[1],
 				B: colors[2],
 				A: 255,
-			}
+			})
 		}
 	}
 
-	return w, h, pixels
+	return w, h, img
 }
 
-func parseP6(reader *bufio.Reader) (w, h int, pixels [][]color.RGBA) {
+func parseP6(reader *bufio.Reader) (w, h int, img *image.RGBA) {
 	// read second line
 	line, _ := reader.ReadString('\n')
 	dimensions := strings.Split(line, " ")
@@ -103,10 +87,9 @@ func parseP6(reader *bufio.Reader) (w, h int, pixels [][]color.RGBA) {
 
 	w = int(tempW)
 	h = int(tempH)
-	pixels = make([][]color.RGBA, h)
-	for i := range len(pixels) {
-		pixels[i] = make([]color.RGBA, w)
-		for y := range len(pixels[i]) {
+	img = image.NewRGBA(image.Rect(0, 0, w, h))
+	for i := range h {
+		for y := range w {
 			colors := make([]byte, 0, 3)
 			for len(colors) < 3 {
 				c, err := reader.ReadByte()
@@ -118,15 +101,14 @@ func parseP6(reader *bufio.Reader) (w, h int, pixels [][]color.RGBA) {
 				}
 				colors = append(colors, c)
 			}
-			pixels[i][y] = color.RGBA{
+			img.SetRGBA(y, i, color.RGBA{
 				R: colors[0],
 				G: colors[1],
 				B: colors[2],
 				A: 255,
-			}
+			})
 		}
-
 	}
 
-	return w, h, pixels
+	return w, h, img
 }
