@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"fyne.io/fyne/v2/app"
 )
@@ -15,12 +16,13 @@ const (
 )
 
 func main() {
+	filePath := os.Args[1]
+	fileName := filepath.Base(filePath)
+
 	myApp := app.New()
-	win := myApp.NewWindow("Image Viewer in Go")
+	win := myApp.NewWindow(fileName)
 
-	fileName := os.Args[1]
-
-	file, err := os.OpenFile(fileName, os.O_RDONLY, 0o755)
+	file, err := os.OpenFile(filePath, os.O_RDONLY, 0o755)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v", err)
 	}
