@@ -40,10 +40,21 @@ func parseImage(f *os.File, win *fyne.Window) {
 
 func parseP3(reader *bufio.Reader) (w, h int, img *image.RGBA) {
 	// read second line
-	line, _ := reader.ReadString('\n')
+	line, err := reader.ReadString('\n')
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error reading the Dimensions line of PPM p3 file: %v\n", err)
+	}
+
 	dimensions := strings.Split(line, " ")
-	tempW, _ := strconv.ParseInt(dimensions[0], 10, 32)
-	tempH, _ := strconv.ParseInt(strings.TrimSpace(dimensions[1]), 10, 32)
+	tempW, err := strconv.Atoi(strings.TrimSpace(dimensions[0]))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+	}
+	tempH, err := strconv.Atoi(strings.TrimSpace(dimensions[1]))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+	}
+
 	// read third line (255)
 	line, _ = reader.ReadString('\n')
 
@@ -78,10 +89,21 @@ func parseP3(reader *bufio.Reader) (w, h int, img *image.RGBA) {
 
 func parseP6(reader *bufio.Reader) (w, h int, img *image.RGBA) {
 	// read second line
-	line, _ := reader.ReadString('\n')
+	line, err := reader.ReadString('\n')
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error reading the Dimensions line of PPM p6 file: %v\n", err)
+	}
+
 	dimensions := strings.Split(line, " ")
-	tempW, _ := strconv.ParseInt(dimensions[0], 10, 32)
-	tempH, _ := strconv.ParseInt(strings.TrimSpace(dimensions[1]), 10, 32)
+	tempW, err := strconv.Atoi(strings.TrimSpace(dimensions[0]))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+	}
+	tempH, err := strconv.Atoi(strings.TrimSpace(dimensions[1]))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+	}
+
 	// read third line (255)
 	line, _ = reader.ReadString('\n')
 
