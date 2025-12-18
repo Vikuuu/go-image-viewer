@@ -56,7 +56,14 @@ func parseP3(reader *bufio.Reader) (w, h int, img *image.RGBA) {
 	}
 
 	// read third line (255)
-	line, _ = reader.ReadString('\n')
+	maxPixelValStr, err := reader.ReadString('\n')
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+	}
+	maxPixelValStr = strings.TrimSpace(maxPixelValStr)
+	maxPixelVal, err := strconv.Atoi(maxPixelValStr)
+
+	factor := uint8(255 / maxPixelVal)
 
 	w = int(tempW)
 	h = int(tempH)
@@ -76,9 +83,9 @@ func parseP3(reader *bufio.Reader) (w, h int, img *image.RGBA) {
 				colors = append(colors, c)
 			}
 			img.SetRGBA(j, i, color.RGBA{
-				R: colors[0],
-				G: colors[1],
-				B: colors[2],
+				R: colors[0] * factor,
+				G: colors[1] * factor,
+				B: colors[2] * factor,
 				A: 255,
 			})
 		}
@@ -105,7 +112,14 @@ func parseP6(reader *bufio.Reader) (w, h int, img *image.RGBA) {
 	}
 
 	// read third line (255)
-	line, _ = reader.ReadString('\n')
+	maxPixelValStr, err := reader.ReadString('\n')
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+	}
+	maxPixelValStr = strings.TrimSpace(maxPixelValStr)
+	maxPixelVal, err := strconv.Atoi(maxPixelValStr)
+
+	factor := uint8(255 / maxPixelVal)
 
 	w = int(tempW)
 	h = int(tempH)
@@ -124,9 +138,9 @@ func parseP6(reader *bufio.Reader) (w, h int, img *image.RGBA) {
 				colors = append(colors, c)
 			}
 			img.SetRGBA(y, i, color.RGBA{
-				R: colors[0],
-				G: colors[1],
-				B: colors[2],
+				R: colors[0] * factor,
+				G: colors[1] * factor,
+				B: colors[2] * factor,
 				A: 255,
 			})
 		}
