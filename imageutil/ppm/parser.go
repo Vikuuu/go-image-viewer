@@ -34,6 +34,8 @@ func ParsePPM(f *os.File, win *fyne.Window) {
 		w, h, img := ParseP6(reader)
 		imgCanvas = canvas.NewImageFromImage(img)
 		winW, winH = w, h
+	default:
+		fmt.Fprintln(os.Stderr, "File is not PPM image file")
 	}
 
 	(*win).SetContent(imgCanvas)
