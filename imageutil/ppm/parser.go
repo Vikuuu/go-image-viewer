@@ -43,10 +43,17 @@ func ParsePPM(f *os.File, win *fyne.Window) {
 }
 
 func ParseP3(reader *bufio.Reader) (w, h int, img *image.RGBA) {
+	var line string
+	var err error
 	// read second line
-	line, err := reader.ReadString('\n')
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error reading the Dimensions line of PPM p3 file: %v\n", err)
+	for {
+		line, err = reader.ReadString('\n')
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error reading the Dimensions line of PPM p3 file: %v\n", err)
+		}
+		if line[0] != '#' {
+			break
+		}
 	}
 
 	dimensions := strings.Split(line, " ")
@@ -60,9 +67,15 @@ func ParseP3(reader *bufio.Reader) (w, h int, img *image.RGBA) {
 	}
 
 	// read third line (255)
-	maxPixelValStr, err := reader.ReadString('\n')
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
+	var maxPixelValStr string
+	for {
+		maxPixelValStr, err = reader.ReadString('\n')
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "%v\n", err)
+		}
+		if maxPixelValStr[0] != '#' {
+			break
+		}
 	}
 	maxPixelValStr = strings.TrimSpace(maxPixelValStr)
 	maxPixelVal, err := strconv.Atoi(maxPixelValStr)
@@ -100,9 +113,16 @@ func ParseP3(reader *bufio.Reader) (w, h int, img *image.RGBA) {
 
 func ParseP6(reader *bufio.Reader) (w, h int, img *image.RGBA) {
 	// read second line
-	line, err := reader.ReadString('\n')
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error reading the Dimensions line of PPM p6 file: %v\n", err)
+	var line string
+	var err error
+	for {
+		line, err = reader.ReadString('\n')
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error reading the Dimensions line of PPM p6 file: %v\n", err)
+		}
+		if line[0] != '#' {
+			break
+		}
 	}
 
 	dimensions := strings.Split(line, " ")
@@ -116,9 +136,15 @@ func ParseP6(reader *bufio.Reader) (w, h int, img *image.RGBA) {
 	}
 
 	// read third line (255)
-	maxPixelValStr, err := reader.ReadString('\n')
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
+	var maxPixelValStr string
+	for {
+		maxPixelValStr, err = reader.ReadString('\n')
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "%v\n", err)
+		}
+		if maxPixelValStr[0] != '#' {
+			break
+		}
 	}
 	maxPixelValStr = strings.TrimSpace(maxPixelValStr)
 	maxPixelVal, err := strconv.Atoi(maxPixelValStr)
