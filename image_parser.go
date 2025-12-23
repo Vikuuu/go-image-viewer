@@ -8,6 +8,7 @@ import (
 	"fyne.io/fyne/v2/app"
 
 	"github.com/Vikuuu/go-image-viewer/imageutil/bmp"
+	"github.com/Vikuuu/go-image-viewer/imageutil/png"
 	"github.com/Vikuuu/go-image-viewer/imageutil/ppm"
 )
 
@@ -27,6 +28,8 @@ func parseImage(fp string) {
 		ppm.ParsePPM(file, &win)
 	case ".bmp":
 		bmp.ParseBMP(file, &win)
+	case ".png":
+		png.ViewPNGImage(file, &win)
 	}
 	win.ShowAndRun()
 }
