@@ -2,13 +2,74 @@ package png
 
 import (
 	"bufio"
+	"encoding/binary"
 	"fmt"
 	"image"
+	"io"
 	"os"
 )
 
-func DecodePNG(reader *bufio.Reader) (int, int, *image.RGBA) {
-	verifyPngSig(reader)
+type pngChunk struct {
+	dataLenByte [4]byte
+	chunkType   [4]byte
+	data        []byte
+	crc         [4]byte
+}
+
+func DecodePNG(r *bufio.Reader) (int, int, *image.RGBA) {
+	verifyPngSig(r)
+
+	for {
+		curChunk := &pngChunk{}
+
+		// Read the length of the chunk
+		_, err := io.ReadFull(r, curChunk.dataLenByte[:])
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error parsing PNG file: %v\n", err)
+			break
+		}
+		chunkLen := int(binary.BigEndian.Uint32(curChunk.dataLenByte[:]))
+
+		// Read the chunk type
+		_, err = io.ReadFull(r, curChunk.chunkType[:])
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error parsing PNG file: %v\n", err)
+			break
+		}
+
+		if string(curChunk.chunkType[:]) == "IEND" {
+			_, err = io.ReadFull(r, curChunk.crc[:])
+			fmt.Println(chunkLen)
+			fmt.Println(curChunk.chunkType[:])
+			fmt.Println(curChunk.data)
+			fmt.Println(curChunk.crc[:])
+			break
+		}
+
+		curChunk.data = make([]byte, chunkLen)
+
+		// Read the chunk data
+		n, err := io.ReadFull(r, curChunk.data)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error parsing PNG file: %v\n", err)
+			break
+		}
+		if n < chunkLen {
+			break
+		}
+
+		// Read the CRC data
+		_, err = io.ReadFull(r, curChunk.crc[:])
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error parsing PNG file: %v\n", err)
+			break
+		}
+
+		fmt.Println(chunkLen)
+		fmt.Println(curChunk.chunkType[:])
+		fmt.Println(curChunk.data)
+		fmt.Println(curChunk.crc[:])
+	}
 
 	return 0, 0, &image.RGBA{}
 }
