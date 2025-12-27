@@ -9,6 +9,19 @@ import (
 	"os"
 )
 
+type ihdr struct {
+	w, h              int
+	bitDepth          int
+	colorType         int
+	compressionMethod int
+	filterMethod      int
+	interlaceMethod   int
+}
+
+type pngFile struct {
+	*ihdr
+}
+
 type pngChunk struct {
 	dataLenByte [4]byte
 	chunkType   [4]byte
@@ -17,8 +30,11 @@ type pngChunk struct {
 }
 
 func DecodePNG(r *bufio.Reader) (int, int, *image.RGBA) {
+	ihdr := &ihdr{}
+	pf := &pngFile{ihdr: ihdr}
 	verifyPngSig(r)
 
+OUTER:
 	for {
 		curChunk := &pngChunk{}
 
@@ -34,15 +50,6 @@ func DecodePNG(r *bufio.Reader) (int, int, *image.RGBA) {
 		_, err = io.ReadFull(r, curChunk.chunkType[:])
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error parsing PNG file: %v\n", err)
-			break
-		}
-
-		if string(curChunk.chunkType[:]) == "IEND" {
-			_, err = io.ReadFull(r, curChunk.crc[:])
-			fmt.Println(chunkLen)
-			fmt.Println(curChunk.chunkType[:])
-			fmt.Println(curChunk.data)
-			fmt.Println(curChunk.crc[:])
 			break
 		}
 
@@ -65,13 +72,16 @@ func DecodePNG(r *bufio.Reader) (int, int, *image.RGBA) {
 			break
 		}
 
-		fmt.Println(chunkLen)
-		fmt.Println(curChunk.chunkType[:])
-		fmt.Println(curChunk.data)
-		fmt.Println(curChunk.crc[:])
+		switch string(curChunk.chunkType[:]) {
+		case "IEND":
+			_, err = io.ReadFull(r, curChunk.crc[:])
+			break OUTER
+		case "IHDR":
+			parseIHDR(ihdr, curChunk.data, curChunk.crc)
+		}
 	}
 
-	return 0, 0, &image.RGBA{}
+	return pf.w, pf.h, &image.RGBA{}
 }
 
 func verifyPngSig(reader *bufio.Reader) {
@@ -91,4 +101,19 @@ func verifyPngSig(reader *bufio.Reader) {
 			panic("Malformed png file signature")
 		}
 	}
+}
+
+func parseIHDR(header *ihdr, data []byte, crc [4]byte) {
+	w, h := data[0:4], data[4:8]
+
+	header.w = int(binary.BigEndian.Uint32(w))
+	header.h = int(binary.BigEndian.Uint32(h))
+
+	header.bitDepth = int(data[8])
+	header.colorType = int(data[9])
+	header.compressionMethod = int(data[10])
+	header.filterMethod = int(data[11])
+	header.interlaceMethod = int(data[12])
+
+	fmt.Printf("%v\n", header)
 }
