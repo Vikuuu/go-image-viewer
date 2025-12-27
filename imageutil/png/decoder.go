@@ -2,6 +2,8 @@ package png
 
 import (
 	"bufio"
+	"bytes"
+	"compress/zlib"
 	"encoding/binary"
 	"fmt"
 	"image"
@@ -20,6 +22,7 @@ type ihdr struct {
 
 type pngFile struct {
 	*ihdr
+	idat []byte
 }
 
 type pngChunk struct {
@@ -78,8 +81,14 @@ OUTER:
 			break OUTER
 		case "IHDR":
 			parseIHDR(ihdr, curChunk.data, curChunk.crc)
+		case "IDAT":
+			pf.idat = append(pf.idat, curChunk.data...)
 		}
 	}
+
+	decompressedData := parseIDAT(pf)
+	fmt.Println(len(decompressedData))
+	fmt.Println(len(pf.idat))
 
 	return pf.w, pf.h, &image.RGBA{}
 }
@@ -116,4 +125,19 @@ func parseIHDR(header *ihdr, data []byte, crc [4]byte) {
 	header.interlaceMethod = int(data[12])
 
 	fmt.Printf("%v\n", header)
+}
+
+func parseIDAT(pf *pngFile) []byte {
+	r := bytes.NewReader(pf.idat)
+	rc, err := zlib.NewReader(r)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+	}
+	var b bytes.Buffer
+	_, err = io.Copy(&b, rc)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+	}
+
+	return b.Bytes()
 }
