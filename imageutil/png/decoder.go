@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"compress/zlib"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"image"
 	"io"
@@ -86,11 +87,55 @@ OUTER:
 		}
 	}
 
-	decompressedData := parseIDAT(pf)
-	fmt.Println(len(decompressedData))
-	fmt.Println(len(pf.idat))
+	inflateData := inflateIDAT(pf)
 
-	return pf.w, pf.h, &image.RGBA{}
+	var bytesPerPixel int
+	switch pf.colorType {
+	case 6:
+		bytesPerPixel = 4
+	default:
+		fmt.Fprintln(os.Stderr, "Not implemented color type: ", pf.colorType)
+	}
+
+	bytesPerRow := (pf.w * bytesPerPixel) + 1
+	rowData := make([]byte, pf.h*(pf.w*4))
+
+	for {
+		sc := make([]byte, bytesPerRow)
+		_, err := io.ReadFull(inflateData, sc)
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			fmt.Fprintln(os.Stderr, err)
+		}
+		switch sc[0] {
+		case 0:
+			rowData = append(rowData, sc[1:]...)
+		case 1:
+			// SUB filter method
+			for i := range sc[1:] {
+				subX := int(sc[i])
+				var rawXMinBpp int
+				if i-bytesPerPixel < 0 {
+					rawXMinBpp = 0
+				} else {
+					rawXMinBpp = int(sc[i-bytesPerPixel])
+				}
+				pixelData := subX + rawXMinBpp
+				rowData = append(rowData, byte(pixelData))
+			}
+		case 2:
+		case 3:
+		case 4:
+			fallthrough
+		default:
+			fmt.Fprintln(os.Stderr, "Not implemented")
+		}
+	}
+
+	img := image.NewRGBA(image.Rect(0, 0, pf.w, pf.h))
+	return pf.w, pf.h, img
 }
 
 func verifyPngSig(reader *bufio.Reader) {
@@ -127,9 +172,8 @@ func parseIHDR(header *ihdr, data []byte, crc [4]byte) {
 	fmt.Printf("%v\n", header)
 }
 
-func inflateIDAT(pf *pngFile) []byte {
+func inflateIDAT(pf *pngFile) io.Reader {
 	r := bytes.NewReader(pf.idat)
-
 	rc, err := zlib.NewReader(r)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -148,5 +192,5 @@ func inflateIDAT(pf *pngFile) []byte {
 		fmt.Fprintln(os.Stderr, "inflated len not equal")
 	}
 
-	return b.Bytes()
+	return &b
 }
