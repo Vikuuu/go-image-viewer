@@ -127,16 +127,25 @@ func parseIHDR(header *ihdr, data []byte, crc [4]byte) {
 	fmt.Printf("%v\n", header)
 }
 
-func parseIDAT(pf *pngFile) []byte {
+func inflateIDAT(pf *pngFile) []byte {
 	r := bytes.NewReader(pf.idat)
+
 	rc, err := zlib.NewReader(r)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	}
+	if rc == nil {
+		fmt.Fprintln(os.Stderr, "rc is nil")
+	}
+
+	defer rc.Close()
 	var b bytes.Buffer
 	_, err = io.Copy(&b, rc)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
+	}
+	if b.Len() != (pf.h * (pf.w*4 + 1)) {
+		fmt.Fprintln(os.Stderr, "inflated len not equal")
 	}
 
 	return b.Bytes()
