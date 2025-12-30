@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"image"
+	"image/color"
 	"io"
 	"os"
 )
@@ -78,7 +79,6 @@ OUTER:
 
 		switch string(curChunk.chunkType[:]) {
 		case "IEND":
-			_, err = io.ReadFull(r, curChunk.crc[:])
 			break OUTER
 		case "IHDR":
 			parseIHDR(ihdr, curChunk.data, curChunk.crc)
@@ -89,17 +89,18 @@ OUTER:
 
 	inflateData := inflateIDAT(pf)
 
-	var bytesPerPixel int
+	var bpp int
 	switch pf.colorType {
 	case 6:
-		bytesPerPixel = 4
+		bpp = 4
 	default:
 		fmt.Fprintln(os.Stderr, "Not implemented color type: ", pf.colorType)
 	}
 
-	bytesPerRow := (pf.w * bytesPerPixel) + 1
-	rowData := make([]byte, pf.h*(pf.w*4))
+	bytesPerRow := (pf.w * bpp) + 1
+	rowData := make([][]byte, pf.h)
 
+	row := 0
 	for {
 		sc := make([]byte, bytesPerRow)
 		_, err := io.ReadFull(inflateData, sc)
@@ -109,32 +110,109 @@ OUTER:
 			}
 			fmt.Fprintln(os.Stderr, err)
 		}
-		switch sc[0] {
+		rowData[row] = make([]byte, 0, (pf.w * 4))
+		filterType := sc[0]
+		rawPixelData := sc[1:]
+		switch filterType {
 		case 0:
-			rowData = append(rowData, sc[1:]...)
+			rowData[row] = append(rowData[row], rawPixelData...)
 		case 1:
 			// SUB filter method
-			for i := range sc[1:] {
-				subX := int(sc[i])
+			for i := 0; i < len(rawPixelData); i++ {
+				subX := int(rawPixelData[i])
 				var rawXMinBpp int
-				if i-bytesPerPixel < 0 {
+				if i-bpp < 0 {
 					rawXMinBpp = 0
 				} else {
-					rawXMinBpp = int(sc[i-bytesPerPixel])
+					rawXMinBpp = int(rowData[row][i-bpp])
 				}
 				pixelData := subX + rawXMinBpp
-				rowData = append(rowData, byte(pixelData))
+				rowData[row] = append(rowData[row], byte(pixelData))
 			}
 		case 2:
+			// Up filter method
+			if row == 0 {
+				rowData[row] = append(rowData[row], rawPixelData...)
+			} else {
+				for i := 0; i < len(rawPixelData); i++ {
+					rawX := int(rawPixelData[i])
+					priorX := int(rowData[row-1][i])
+					pixelData := rawX + priorX
+					rowData[row] = append(rowData[row], byte(pixelData))
+				}
+			}
 		case 3:
+			// Average filter method
+			for i := 0; i < len(rawPixelData); i++ {
+				avgX := int(rawPixelData[i])
+				var rawXMinBpp int
+				var priorX int
+				if i-bpp < 0 {
+					rawXMinBpp = 0
+				} else {
+					rawXMinBpp = int(rowData[row][i-bpp])
+				}
+				if row == 0 {
+					priorX = 0
+				} else {
+					priorX = int(rowData[row-1][i])
+				}
+				pixelData := avgX + ((rawXMinBpp + priorX) / 2)
+				rowData[row] = append(rowData[row], byte(pixelData))
+			}
 		case 4:
-			fallthrough
+			// Paeth filter method
+			for i := 0; i < len(rawPixelData); i++ {
+				rawX := int(rawPixelData[i])
+				var rawXMinBpp, priorX, priorXMinBpp int
+
+				if i-bpp < 0 {
+					rawXMinBpp = 0
+				} else {
+					rawXMinBpp = int(rowData[row][i-bpp])
+				}
+				if row == 0 {
+					priorX = 0
+				} else {
+					priorX = int(rowData[row-1][i])
+				}
+				if row == 0 || i-bpp < 0 {
+					priorXMinBpp = 0
+				} else {
+					priorXMinBpp = int(rowData[row-1][i-bpp])
+				}
+
+				pixelData := rawX + paethPredictor(rawXMinBpp, priorX, priorXMinBpp)
+
+				rowData[row] = append(rowData[row], byte(pixelData))
+			}
 		default:
-			fmt.Fprintln(os.Stderr, "Not implemented")
+			fmt.Fprintln(os.Stderr, "Not implemented > 4")
 		}
+		row++
 	}
 
 	img := image.NewRGBA(image.Rect(0, 0, pf.w, pf.h))
+	for h := 0; h < len(rowData); h++ {
+		colors := make([]byte, 0, 4)
+		for w := 0; w < len(rowData[h]); w++ {
+			colors = append(colors, rowData[h][w])
+			if len(colors) == 4 {
+				img.SetRGBA(
+					w/4,
+					h,
+					color.RGBA{
+						R: colors[0],
+						G: colors[1],
+						B: colors[2],
+						A: colors[3],
+					},
+				)
+
+				colors = make([]byte, 0, 4)
+			}
+		}
+	}
 	return pf.w, pf.h, img
 }
 
@@ -178,19 +256,10 @@ func inflateIDAT(pf *pngFile) io.Reader {
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	}
-	if rc == nil {
-		fmt.Fprintln(os.Stderr, "rc is nil")
-	}
-
 	defer rc.Close()
+
 	var b bytes.Buffer
 	_, err = io.Copy(&b, rc)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-	}
-	if b.Len() != (pf.h * (pf.w*4 + 1)) {
-		fmt.Fprintln(os.Stderr, "inflated len not equal")
-	}
 
-	return &b
+	return bytes.NewReader(b.Bytes())
 }
