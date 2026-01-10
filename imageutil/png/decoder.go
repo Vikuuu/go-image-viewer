@@ -193,24 +193,19 @@ OUTER:
 	}
 
 	img := image.NewRGBA(image.Rect(0, 0, pf.w, pf.h))
-	for h := 0; h < len(rowData); h++ {
-		colors := make([]byte, 0, 4)
-		for w := 0; w < len(rowData[h]); w++ {
-			colors = append(colors, rowData[h][w])
-			if len(colors) == 4 {
-				img.SetRGBA(
-					w/4,
-					h,
-					color.RGBA{
-						R: colors[0],
-						G: colors[1],
-						B: colors[2],
-						A: colors[3],
-					},
-				)
-
-				colors = make([]byte, 0, 4)
-			}
+	for h := range rowData {
+		for w := 0; w < pf.w; w++ {
+			byteIndex := w * 4
+			img.SetRGBA(
+				w,
+				h,
+				color.RGBA{
+					R: rowData[h][byteIndex],
+					G: rowData[h][byteIndex+1],
+					B: rowData[h][byteIndex+2],
+					A: rowData[h][byteIndex+3],
+				},
+			)
 		}
 	}
 	return pf.w, pf.h, img
