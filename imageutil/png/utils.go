@@ -6,10 +6,10 @@ package png
 //
 // a = left, b = above, c = upper left
 func paethPredictor(a, b, c int) int {
-	p := a + b - c // initial estimate
-	pa := p - a    // distance to a, b, c
-	pb := p - b
-	pc := p - c
+	p := a + b - c   // initial estimate
+	pa := abs(p - a) // distance to a, b, c
+	pb := abs(p - b)
+	pc := abs(p - c)
 	// return nearest of a, b, c
 	// breaking ties in order a, b, c.
 	if pa <= pb && pa <= pc {
@@ -19,4 +19,11 @@ func paethPredictor(a, b, c int) int {
 	} else {
 		return c
 	}
+}
+
+func abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
 }
