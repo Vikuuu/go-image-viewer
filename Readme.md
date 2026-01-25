@@ -4,13 +4,13 @@ Implemented an image viewer application in Go programming language using the Fyn
 
 Created image file parser for following file types:
 
-    PPM
-    BPM
-    PNG
+- PPM
+- BPM
+- PNG
 
 Here is the video how that works.
 
-[![Watch the video]()](https://youtu.be/RnaCRd46GAw)
+[![Watch the video]()]([https://youtube.com/watch?v=RnaCRd46GAw](https://youtu.be/RnaCRd46GAw?si=pPH_O9wRkRepO1WA))
 
 
 ## Screenshot
