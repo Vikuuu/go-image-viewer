@@ -10,8 +10,7 @@ Created image file parser for following file types:
 
 Here is the video how that works.
 
-[![Watch the video]()]([https://youtube.com/watch?v=RnaCRd46GAw](https://youtu.be/RnaCRd46GAw?si=pPH_O9wRkRepO1WA))
-
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/RnaCRd46GAw/0.jpg)](https://www.youtube.com/watch?v=RnaCRd46GAw)
 
 ## Screenshot
 
