@@ -1,8 +1,17 @@
 # Image Viewer in GO
 
-This is the basic implementation of image-viewer in GO. Supporting on PPM P6, P3 and BMP file type as of now.
+Implemented an image viewer application in Go programming language using the Fyne library for the application.
 
-[![Watch the video]()](https://github.com/Vikuuu/go-image-viewer/blob/main/demo.mp4)
+Created image file parser for following file types:
+
+    PPM
+    BPM
+    PNG
+
+Here is the video how that works.
+
+[![Watch the video]()](https://youtu.be/RnaCRd46GAw)
+
 
 ## Screenshot
 
